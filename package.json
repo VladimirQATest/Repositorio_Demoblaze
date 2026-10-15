@@ -1,0 +1,23 @@
+{
+  "name": "demoblaze-automation",
+  "version": "1.0.0",
+  "description": "Playwright E2E automation for https://demoblaze.com/ (PRODUCT STORE demo)",
+  "scripts": {
+    "test": "playwright test --project=chromium",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed --project=chromium",
+    "test:api": "playwright test tests/api.spec.ts --project=chromium",
+    "test:firefox": "playwright test --project=firefox",
+    "test:mobile": "playwright test --project=mobile",
+    "test:mobile": "playwright test --project=mobile",
+    "report": "playwright show-report",
+    "dashboard": "start dashboard.html",
+    "t": "node scripts/run.mjs",
+    "t:headed": "node scripts/run.mjs --headed",
+    "t:list": "node scripts/run.mjs --list"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^20.0.0"
+  }
+}

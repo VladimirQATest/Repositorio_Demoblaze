@@ -1,0 +1,617 @@
+<!doctype html>
+<!--
+  Run dashboard — DemoBlaze automation
+  Designed with the frontend-design skill (anthropics/skills).
+  Data source: playwright-report/ from the last `npm test` run.
+  To refresh: re-run the suite, then update the JSON in <script id="run-data">.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Run dashboard — DemoBlaze automation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F4F5F2;
+    --ink: #16181D;
+    --muted: #6A7076;
+    --hairline: #D9DCD7;
+    --pass: #157F3D;
+    --fail: #B3261E;
+    --accent: #2451C9;
+    --row-hover: #EBEDE9;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  main {
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: 0 1.25rem 4rem;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* ---------- top bar ---------- */
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .wordmark {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+  }
+
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--fail);
+  }
+  .status-dot.passed { background: var(--pass); }
+
+  .filters {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .filters button {
+    font: inherit;
+    font-size: 0.875rem;
+    padding: 0.35rem 0.9rem;
+    color: var(--ink);
+    background: transparent;
+    border: 1px solid var(--hairline);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 120ms ease, border-color 120ms ease;
+  }
+
+  .filters button:hover { border-color: var(--muted); }
+
+  .filters button[aria-pressed="true"] {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
+  }
+
+  /* ---------- hero ---------- */
+
+  .status-word {
+    margin: 2.5rem 0 0;
+    font-size: clamp(3rem, 12vw, 5rem);
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    line-height: 1;
+  }
+  .status-word.failed { color: var(--fail); }
+  .status-word.passed { color: var(--pass); }
+
+  .status-sub {
+    margin: 0.625rem 0 0;
+    font-size: 1.125rem;
+  }
+
+  .mono {
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.9375em;
+  }
+
+  .ratio-bar {
+    display: flex;
+    margin-top: 1.75rem;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--hairline);
+    overflow: hidden;
+  }
+  .ratio-bar .seg-pass { background: var(--pass); }
+  .ratio-bar .seg-fail { background: var(--fail); }
+
+  /* ---------- run metadata ---------- */
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem 2.5rem;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--hairline);
+  }
+
+  .meta-label {
+    display: block;
+    font-size: 0.8125rem;
+    color: var(--muted);
+  }
+
+  .meta-value {
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.9375rem;
+  }
+
+  /* ---------- suites ---------- */
+
+  .showing {
+    margin: 2.25rem 0 0;
+    font-size: 0.875rem;
+    color: var(--muted);
+  }
+
+  .suite {
+    margin-top: 2rem;
+  }
+
+  .suite-header {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .suite-header h2 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+
+  .suite-counts {
+    font-size: 0.875rem;
+    color: var(--muted);
+  }
+  .suite-counts .n-pass { color: var(--pass); font-weight: 600; }
+  .suite-counts .n-fail { color: var(--fail); font-weight: 600; }
+
+  .suite-file {
+    margin-left: auto;
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.8125rem;
+    color: var(--muted);
+  }
+
+  .suite table {
+    width: 100%;
+    margin-top: 0.25rem;
+    border-collapse: collapse;
+  }
+
+  .suite th {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--muted);
+    text-align: left;
+    padding: 0.5rem 0.5rem 0.35rem 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .suite td,
+  .suite th[scope="row"] {
+    padding: 0.45rem 0.5rem 0.45rem 0;
+    border-bottom: 1px solid var(--hairline);
+    font-size: 0.9375rem;
+    font-weight: 400;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .suite tbody tr:last-child td,
+  .suite tbody tr:last-child th[scope="row"] {
+    border-bottom: none;
+  }
+
+  .suite tbody tr {
+    transition: background 120ms ease;
+  }
+  .suite tbody tr:hover { background: var(--row-hover); }
+
+  .col-status,
+  .col-time { width: 1%; white-space: nowrap; }
+
+  .mark { font-weight: 700; }
+  .mark.pass { color: var(--pass); }
+  .mark.fail { color: var(--fail); }
+
+  .col-time {
+    text-align: right;
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.875rem;
+    color: var(--muted);
+  }
+
+  /* ---------- empty state ---------- */
+
+  .empty {
+    margin-top: 2rem;
+    padding: 2rem 1rem;
+    border: 1px dashed var(--hairline);
+    border-radius: 3px;
+    text-align: center;
+    color: var(--muted);
+  }
+
+  /* ---------- footer ---------- */
+
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--hairline);
+    font-size: 0.8125rem;
+    color: var(--muted);
+  }
+
+  footer a { color: var(--accent); }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 36rem) {
+    .suite-file { margin-left: 0; flex-basis: 100%; }
+    .suite td, .suite th[scope="row"] { font-size: 0.875rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+
+  @media print {
+    .filters { display: none; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="topbar">
+    <span class="wordmark"><span class="status-dot" id="status-dot"></span>Run dashboard</span>
+    <nav class="filters" aria-label="Filter tests">
+      <button type="button" data-filter="all" aria-pressed="true">All</button>
+      <button type="button" data-filter="failed" aria-pressed="false">Failed</button>
+      <button type="button" data-filter="passed" aria-pressed="false">Passed</button>
+    </nav>
+  </div>
+
+  <h1 class="status-word failed" id="status-word">Failed</h1>
+  <p class="status-sub" id="status-sub"></p>
+
+  <div class="ratio-bar" id="ratio-bar" role="img" aria-label="Pass to fail ratio"></div>
+
+  <div class="meta">
+    <div>
+      <span class="meta-label">Date</span>
+      <span class="meta-value" id="run-date"></span>
+    </div>
+    <div>
+      <span class="meta-label">Project</span>
+      <span class="meta-value" id="run-project"></span>
+    </div>
+    <div>
+      <span class="meta-label">Duration</span>
+      <span class="meta-value" id="run-duration"></span>
+    </div>
+  </div>
+
+  <p class="showing" id="showing"></p>
+  <div id="suites"></div>
+
+  <footer>
+    <p>
+      Source: the last Playwright run in <span class="mono">playwright-report/</span>.
+      After re-running <span class="mono">npm test</span>, update the embedded data
+      to refresh this page.
+    </p>
+    <p><a href="playwright-report/index.html">Open the full Playwright report</a></p>
+  </footer>
+</main>
+
+<script id="run-data" type="application/json">
+{
+  "startTime": 1791923131453,
+  "durationMs": 372721,
+  "project": "chromium",
+  "stats": { "total": 31, "expected": 15, "unexpected": 16, "flaky": 0, "skipped": 0 },
+  "suites": [
+    {
+      "name": "Catalog",
+      "file": "catalog.spec.ts",
+      "tests": [
+        { "title": "home page loads with carousel, categories and 9 products", "outcome": "failed", "durationMs": 65021, "line": 6 },
+        { "title": "pagination: Next and Previous navigate the catalog", "outcome": "passed", "durationMs": 29150, "line": 25 },
+        { "title": "filter by category \"Phones\" renders exactly that category's products", "outcome": "passed", "durationMs": 37132, "line": 51 },
+        { "title": "filter by category \"Laptops\" renders exactly that category's products", "outcome": "passed", "durationMs": 31780, "line": 51 },
+        { "title": "filter by category \"Monitors\" renders exactly that category's products", "outcome": "failed", "durationMs": 52419, "line": 51 },
+        { "title": "hero carousel navigation changes the active slide", "outcome": "failed", "durationMs": 60359, "line": 70 }
+      ]
+    },
+    {
+      "name": "Product detail",
+      "file": "product.spec.ts",
+      "tests": [
+        { "title": "opening a product from the catalog shows matching title, price and description", "outcome": "passed", "durationMs": 52783, "line": 7 },
+        { "title": "add to cart from the product page shows the success alert", "outcome": "failed", "durationMs": 40105, "line": 31 },
+        { "title": "product page can be opened directly by id", "outcome": "passed", "durationMs": 25226, "line": 47 }
+      ]
+    },
+    {
+      "name": "Cart and checkout",
+      "file": "cart-checkout.spec.ts",
+      "tests": [
+        { "title": "anonymous user can add products and the cart shows the correct total", "outcome": "failed", "durationMs": 31108, "line": 29 },
+        { "title": "deleting an item recalculates the cart total", "outcome": "failed", "durationMs": 92014, "line": 53 },
+        { "title": "place order happy path shows the purchase success popup", "outcome": "failed", "durationMs": 73454, "line": 78 },
+        { "title": "purchase with empty name or card shows the validation alert", "outcome": "failed", "durationMs": 39197, "line": 108 },
+        { "title": "logged-in user can add products to the cart (token flow)", "outcome": "passed", "durationMs": 54324, "line": 128 }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "file": "auth.spec.ts",
+      "tests": [
+        { "title": "sign up a new user shows the success alert", "outcome": "passed", "durationMs": 50579, "line": 9 },
+        { "title": "sign up an existing user shows \"This user already exist.\"", "outcome": "failed", "durationMs": 11959, "line": 24 },
+        { "title": "sign up with empty fields shows the validation alert", "outcome": "passed", "durationMs": 60217, "line": 43 },
+        { "title": "login with valid credentials shows the welcome user", "outcome": "failed", "durationMs": 11815, "line": 55 },
+        { "title": "login with a wrong password shows \"Wrong password.\"", "outcome": "failed", "durationMs": 75078, "line": 77 },
+        { "title": "login with a non-existent user shows \"User does not exist.\"", "outcome": "failed", "durationMs": 62941, "line": 96 },
+        { "title": "login with empty fields shows the validation alert", "outcome": "passed", "durationMs": 40727, "line": 111 },
+        { "title": "logout returns the navigation to the anonymous state", "outcome": "failed", "durationMs": 12025, "line": 123 }
+      ]
+    },
+    {
+      "name": "Contact and About",
+      "file": "contact-about.spec.ts",
+      "tests": [
+        { "title": "contact form can be filled and sent", "outcome": "failed", "durationMs": 68102, "line": 9 },
+        { "title": "about us modal opens with a video player", "outcome": "failed", "durationMs": 60395, "line": 23 },
+        { "title": "the hero carousel is hidden on small viewports", "outcome": "failed", "durationMs": 37762, "line": 36 }
+      ]
+    },
+    {
+      "name": "API",
+      "file": "api.spec.ts",
+      "tests": [
+        { "title": "GET /entries returns the first catalog page with pagination info", "outcome": "passed", "durationMs": 706, "line": 6 },
+        { "title": "POST /pagination returns a different page of products", "outcome": "passed", "durationMs": 1093, "line": 18 },
+        { "title": "POST /bycat returns products of the requested category", "outcome": "passed", "durationMs": 1426, "line": 28 },
+        { "title": "POST /view returns product details", "outcome": "passed", "durationMs": 1318, "line": 35 },
+        { "title": "signup + login round trip returns a valid auth token", "outcome": "passed", "durationMs": 1253, "line": 44 },
+        { "title": "login with a wrong password is rejected by the API", "outcome": "passed", "durationMs": 1066, "line": 56 }
+      ]
+    }
+  ]
+}
+</script>
+
+<script>
+(function () {
+  'use strict';
+
+  var RUN = JSON.parse(document.getElementById('run-data').textContent);
+  var fmtMs = function (ms) {
+    return ms < 1000 ? Math.round(ms) + 'ms' : (ms / 1000).toFixed(1) + 's';
+  };
+  var fmtRunMs = function (ms) {
+    var s = Math.round(ms / 1000);
+    return Math.floor(s / 60) + 'm ' + String(s % 60).padStart(2, '0') + 's';
+  };
+
+  // ---- hero ----
+  var passed = RUN.stats.expected;
+  var failed = RUN.stats.unexpected;
+  var total = RUN.stats.total;
+  var ok = failed === 0 && RUN.stats.ok !== false;
+
+  var word = document.getElementById('status-word');
+  word.textContent = ok ? 'Passed' : 'Failed';
+  word.className = 'status-word ' + (ok ? 'passed' : 'failed');
+
+  document.getElementById('status-sub').textContent = ok
+    ? 'All ' + total + ' tests passed.'
+    : failed + ' of ' + total + ' tests failed.';
+
+  var dot = document.getElementById('status-dot');
+  dot.className = 'status-dot' + (ok ? ' passed' : '');
+  dot.title = ok ? 'Run passed' : 'Run failed';
+
+  var bar = document.getElementById('ratio-bar');
+  var passPct = total ? (passed / total) * 100 : 0;
+  var segPass = document.createElement('div');
+  segPass.className = 'seg-pass';
+  segPass.style.width = passPct + '%';
+  var segFail = document.createElement('div');
+  segFail.className = 'seg-fail';
+  segFail.style.width = (100 - passPct) + '%';
+  bar.appendChild(segPass);
+  bar.appendChild(segFail);
+  bar.setAttribute('aria-label', passed + ' passed, ' + failed + ' failed out of ' + total + ' tests');
+
+  document.getElementById('run-date').textContent = new Date(RUN.startTime)
+    .toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  document.getElementById('run-project').textContent = RUN.project;
+  document.getElementById('run-duration').textContent = fmtRunMs(RUN.durationMs);
+
+  // ---- suites ----
+  var suitesHost = document.getElementById('suites');
+  var showingEl = document.getElementById('showing');
+  var emptyEl = null;
+
+  function suiteCounts(suite) {
+    var p = 0, f = 0;
+    suite.tests.forEach(function (t) { t.outcome === 'passed' ? p++ : f++; });
+    return { passed: p, failed: f };
+  }
+
+  function render(filter) {
+    suitesHost.textContent = '';
+    if (emptyEl) { emptyEl.remove(); emptyEl = null; }
+
+    var shown = 0;
+    RUN.suites.forEach(function (suite) {
+      var visible = suite.tests.filter(function (t) {
+        return filter === 'all' || t.outcome === filter;
+      });
+      if (!visible.length) return;
+      shown += visible.length;
+
+      var counts = suiteCounts(suite);
+
+      var section = document.createElement('section');
+      section.className = 'suite';
+
+      var header = document.createElement('div');
+      header.className = 'suite-header';
+
+      var h2 = document.createElement('h2');
+      h2.textContent = suite.name;
+      header.appendChild(h2);
+
+      var countsEl = document.createElement('span');
+      countsEl.className = 'suite-counts';
+      if (counts.failed === 0) {
+        var pOnly = document.createElement('span');
+        pOnly.className = 'n-pass';
+        pOnly.textContent = counts.passed;
+        countsEl.appendChild(pOnly);
+        countsEl.appendChild(document.createTextNode(' passed'));
+      } else if (counts.passed === 0) {
+        var fOnly = document.createElement('span');
+        fOnly.className = 'n-fail';
+        fOnly.textContent = counts.failed;
+        countsEl.appendChild(fOnly);
+        countsEl.appendChild(document.createTextNode(' failed'));
+      } else {
+        var pn = document.createElement('span');
+        pn.className = 'n-pass';
+        pn.textContent = counts.passed;
+        countsEl.appendChild(pn);
+        countsEl.appendChild(document.createTextNode(' passed, '));
+        var fn = document.createElement('span');
+        fn.className = 'n-fail';
+        fn.textContent = counts.failed;
+        countsEl.appendChild(fn);
+        countsEl.appendChild(document.createTextNode(' failed'));
+      }
+      header.appendChild(countsEl);
+
+      var file = document.createElement('span');
+      file.className = 'suite-file';
+      file.textContent = suite.file;
+      header.appendChild(file);
+
+      section.appendChild(header);
+
+      var table = document.createElement('table');
+      var thead = document.createElement('thead');
+      var headRow = document.createElement('tr');
+      ['Status', 'Test', 'Time'].forEach(function (label, i) {
+        var th = document.createElement('th');
+        th.scope = 'col';
+        th.textContent = label;
+        if (i === 0) th.className = 'col-status';
+        if (i === 2) th.className = 'col-time';
+        headRow.appendChild(th);
+      });
+      thead.appendChild(headRow);
+      table.appendChild(thead);
+
+      var tbody = document.createElement('tbody');
+      visible.forEach(function (t) {
+        var tr = document.createElement('tr');
+
+        var tdStatus = document.createElement('td');
+        tdStatus.className = 'col-status';
+        var mark = document.createElement('span');
+        var isPass = t.outcome === 'passed';
+        mark.className = 'mark ' + (isPass ? 'pass' : 'fail');
+        mark.setAttribute('aria-hidden', 'true');
+        mark.textContent = isPass ? '✓' : '✗';
+        tdStatus.appendChild(mark);
+        var sr = document.createElement('span');
+        sr.className = 'visually-hidden';
+        sr.textContent = isPass ? 'Passed' : 'Failed';
+        tdStatus.appendChild(sr);
+        tr.appendChild(tdStatus);
+
+        var thTitle = document.createElement('th');
+        thTitle.scope = 'row';
+        thTitle.textContent = t.title;
+        tr.appendChild(thTitle);
+
+        var tdTime = document.createElement('td');
+        tdTime.className = 'col-time';
+        tdTime.textContent = fmtMs(t.durationMs);
+        tr.appendChild(tdTime);
+
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      section.appendChild(table);
+      suitesHost.appendChild(section);
+    });
+
+    showingEl.textContent = filter === 'all'
+      ? 'Showing all ' + total + ' tests.'
+      : 'Showing ' + shown + ' ' + filter + ' tests.';
+
+    if (shown === 0) {
+      emptyEl = document.createElement('div');
+      emptyEl.className = 'empty';
+      emptyEl.textContent = filter === 'failed'
+        ? 'No failed tests in this run.'
+        : 'No passed tests in this run.';
+      suitesHost.appendChild(emptyEl);
+    }
+  }
+
+  document.querySelectorAll('.filters button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.filters button').forEach(function (b) {
+        b.setAttribute('aria-pressed', 'false');
+      });
+      btn.setAttribute('aria-pressed', 'true');
+      render(btn.getAttribute('data-filter'));
+    });
+  });
+
+  render('all');
+})();
+</script>
+</body>
+</html>
